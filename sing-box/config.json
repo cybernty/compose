@@ -1,0 +1,130 @@
+{
+  "log": {
+    "level": "debug",
+    "timestamp": true
+  },
+  "inbounds": [
+    {
+      "type": "shadowsocks",
+      "listen": "::",
+      "listen_port": 65534,
+      "network": "tcp",
+      "method": "2022-blake3-aes-128-gcm",
+      "password": "<secret>",
+      "multiplex": {
+        "enabled": true
+      }
+    },
+    {
+      "type": "vmess",
+      "listen": "::",
+      "listen_port": 65533,
+      "users": [
+        {
+          "uuid": "<secret>"
+        }
+      ],
+      "multiplex": {
+        "enabled": true
+      }
+    },
+    {
+      "type": "trojan",
+      "listen": "::",
+      "listen_port": 65532,
+      "users": [
+        {
+          "password": "<secret>"
+        }
+      ],
+      "tls": {
+        "enabled": true,
+        "server_name": "www.mihoyo.com",
+        "key_path": "/etc/sing-box/server.key",
+        "certificate_path": "/etc/sing-box/server.crt"
+      },
+      "multiplex": {
+        "enabled": true
+      }
+    },
+    {
+      "type": "hysteria2",
+      "listen": "::",
+      "listen_port": 65531,
+      "up_mbps": 16,
+      "down_mbps": 16,
+      "users": [
+        {
+          "password": "<secret>"
+        }
+      ],
+      "tls": {
+        "enabled": true,
+        "server_name": "www.mihoyo.com",
+        "key_path": "/etc/sing-box/server.key",
+        "certificate_path": "/etc/sing-box/server.crt"
+      }
+    },
+    {
+      "type": "shadowtls",
+      "listen": "::",
+      "listen_port": 65530,
+      "version": 3,
+      "detour": "shadowsocks-in",
+      "strict_mode": true,
+      "users": [
+        {
+          "password": "<secret>"
+        }
+      ],
+      "handshake": {
+        "server": "www.mihoyo.com",
+        "server_port": 443
+      }
+    },
+    {
+      "type": "shadowsocks",
+      "tag": "shadowsocks-in",
+      "listen": "127.0.0.1",
+      "method": "2022-blake3-aes-128-gcm",
+      "password": "<secret>",
+      "multiplex": {
+        "enabled": true
+      }
+    },
+    {
+      "type": "vless",
+      "listen": "::",
+      "listen_port": 65529,
+      "users": [
+        {
+          "uuid": "<secret>",
+          "flow": "xtls-rprx-vision"
+        }
+      ],
+      "tls": {
+        "enabled": true,
+        "certificate_path": "/etc/sing-box/server.crt",
+        "key_path": "/etc/sing-box/server.key"
+      }
+    },
+    {
+      "type": "tuic",
+      "listen": "::",
+      "listen_port": 65528,
+      "users": [
+        {
+          "uuid": "<secret>",
+          "password": "<secret>"
+        }
+      ],
+      "congestion_control": "bbr",
+      "tls": {
+        "enabled": true,
+        "server_name": "www.mihoyo.com",
+        "key_path": "/etc/sing-box/server.key",
+        "certificate_path": "/etc/sing-box/server.crt"
+      }
+    }
+  ]
+}

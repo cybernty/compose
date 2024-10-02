@@ -1,0 +1,8 @@
+services:
+  sing-box:
+    image: ghcr.io/sagernet/sing-box
+    container_name: sing-box
+    network_mode: host
+    volumes:
+      - ./:/etc/sing-box/
+    command: -D /var/lib/sing-box -c /etc/sing-box/config.json run
