@@ -1,0 +1,20 @@
+services:
+  server:
+    image: gitea/gitea:1.22.2
+    container_name: gitea
+    environment:
+      - USER_UID=1001
+      - USER_GID=1001
+    networks:
+      - gitea
+    volumes:
+      - ./gitea:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "65527:3000"
+      - "65526:22"
+
+networks:
+  gitea:
+    external: false
