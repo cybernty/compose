@@ -6,3 +6,4 @@ services:
     volumes:
       - ./:/etc/sing-box/
     command: -D /var/lib/sing-box -c /etc/sing-box/config.json run
+    restart: always
