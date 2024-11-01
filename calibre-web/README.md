@@ -9,5 +9,14 @@
 - [calibre-web/README.md at master · janeczku/calibre-web · GitHub](https://github.com/janeczku/calibre-web/blob/master/README.md#quick-start)
 
 ```sh
+docker compose up -d
 curl -O -L https://github.com/janeczku/calibre-web/raw/master/library/metadata.db
+sudo chmod 777 -R calibre
+mv metadata.db calibre/library
 ```
+
+## Config
+
+1. choose database file
+2. change password
+3. enable upload
