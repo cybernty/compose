@@ -7,6 +7,7 @@
 ```sh
 curl -X POST http://localhost:65519/translate \
 -H "Content-Type: application/json" \
+-H "Authorization: Bearer helloworld" \
 -d '{
     "text": "Hello, world!",
     "source_lang": "EN",
