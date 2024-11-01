@@ -1,0 +1,6 @@
+services:
+  deeplx:
+    image: ghcr.io/owo-network/deeplx:latest
+    restart: always
+    ports:
+      - "65519:1188"
