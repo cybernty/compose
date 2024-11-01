@@ -1,0 +1,7 @@
+services:
+  nginx:
+    image: nginx
+    container_name: nginx
+    network_mode: host
+    volumes:
+      - ./:/etc/nginx/
