@@ -1,0 +1,11 @@
+services:
+  whisper:
+    image: whisper
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: whisper
+    volumes:
+      - ./:/app
+    command: ["--help"]
+    cpus: "0.5"
