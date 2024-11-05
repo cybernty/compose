@@ -1,0 +1,236 @@
+{
+  "log": {
+    "level": "debug",
+    "timestamp": true
+  },
+  "dns": {
+    "servers": [
+      {
+        "address": "h3://223.5.5.5/dns-query",
+        "detour": "direct"
+      },
+      {
+        "tag": "remote",
+        "address": "fakeip"
+      }
+    ],
+    "rules": [
+      {
+        "query_type": ["A", "AAAA"],
+        "server": "remote"
+      }
+    ],
+    "fakeip": {
+      "enabled": true,
+      "inet4_range": "198.18.0.0/15",
+      "inet6_range": "fc00::/18"
+    },
+    "strategy": "prefer_ipv4",
+    "independent_cache": true
+  },
+  "inbounds": [
+    {
+      "type": "mixed",
+      "listen_port": 1080,
+      "sniff": true
+    },
+    {
+      "type": "tun",
+      "inet4_address": "172.19.0.1/30",
+      "inet6_address": "fdfe:dcba:9876::1/126",
+      "auto_route": true,
+      "strict_route": true,
+      "sniff": true
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "selector",
+      "tag": "proxy",
+      "outbounds": [
+        "ss",
+        "vmess",
+        "trojan",
+        "shadowtls",
+        "vless",
+        "tuic",
+        "hysteria2"
+      ]
+    },
+    {
+      "type": "shadowsocks",
+      "tag": "ss",
+      "server": "<secret>",
+      "server_port": 65534,
+      "method": "2022-blake3-aes-128-gcm",
+      "password": "<secret>",
+      "multiplex": {
+        "enabled": true
+      }
+    },
+    {
+      "type": "vmess",
+      "tag": "vmess",
+      "server": "<secret>",
+      "server_port": 65533,
+      "uuid": "<secret>",
+      "security": "auto",
+      "multiplex": {
+        "enabled": true
+      }
+    },
+    {
+      "type": "trojan",
+      "tag": "trojan",
+      "server": "<secret>",
+      "server_port": 65532,
+      "password": "<secret>",
+      "tls": {
+        "enabled": true,
+        "server_name": "www.mihoyo.com",
+        "insecure": true,
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
+      },
+      "multiplex": {
+        "enabled": true
+      }
+    },
+    {
+      "type": "shadowsocks",
+      "tag": "shadowtls",
+      "detour": "shadowtls-outer",
+      "method": "2022-blake3-aes-128-gcm",
+      "password": "<secret>",
+      "multiplex": {
+        "enabled": true
+      }
+    },
+    {
+      "type": "shadowtls",
+      "tag": "shadowtls-outer",
+      "server": "<secret>",
+      "server_port": 65530,
+      "version": 3,
+      "password": "<secret>",
+      "tls": {
+        "enabled": true,
+        "server_name": "www.mihoyo.com"
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "vless",
+      "server": "<secret>",
+      "server_port": 65529,
+      "uuid": "<secret>",
+      "flow": "xtls-rprx-vision",
+      "tls": {
+        "enabled": true,
+        "server_name": "www.mihoyo.com",
+        "insecure": true,
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
+      },
+      "packet_encoding": "xudp"
+    },
+    {
+      "type": "tuic",
+      "tag": "tuic",
+      "server": "<secret>",
+      "server_port": 65528,
+      "uuid": "<secret>",
+      "password": "<secret>",
+      "congestion_control": "bbr",
+      "tls": {
+        "enabled": true,
+        "server_name": "www.mihoyo.com",
+        "insecure": true
+      }
+    },
+    {
+      "type": "hysteria2",
+      "tag": "hysteria2",
+      "server": "<secret>",
+      "server_port": 65531,
+      "password": "<secret>",
+      "tls": {
+        "enabled": true,
+        "server_name": "www.mihoyo.com",
+        "insecure": true
+      }
+    },
+    {
+      "type": "direct",
+      "tag": "direct"
+    },
+    {
+      "type": "block",
+      "tag": "block"
+    },
+    {
+      "type": "dns",
+      "tag": "dns"
+    }
+  ],
+  "route": {
+    "rules": [
+      {
+        "protocol": "dns",
+        "outbound": "dns"
+      },
+      {
+        "ip_is_private": true,
+        "outbound": "direct"
+      },
+      {
+        "clash_mode": "Direct",
+        "outbound": "direct"
+      },
+      {
+        "clash_mode": "Global",
+        "outbound": "proxy"
+      },
+      {
+        "rule_set": ["geoip-cn", "geosite-geolocation-cn"],
+        "outbound": "direct"
+      },
+      {
+        "domain": "-",
+        "invert": true,
+        "outbound": "proxy"
+      }
+    ],
+    "rule_set": [
+      {
+        "type": "remote",
+        "tag": "geoip-cn",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs",
+        "download_detour": "proxy"
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-geolocation-cn",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-geolocation-cn.srs",
+        "download_detour": "proxy"
+      }
+    ],
+    "auto_detect_interface": true
+  },
+  "experimental": {
+    "cache_file": {
+      "enabled": true
+    },
+    "clash_api": {
+      "external_controller": "127.0.0.1:9090",
+      "external_ui": "webui",
+      "external_ui_download_detour": "proxy"
+    }
+  }
+}
