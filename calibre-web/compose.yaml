@@ -12,6 +12,5 @@ services:
       - ./data:/config
       - ./calibre/library:/books
     ports:
-      - 65524:8083
+      - "65524:8083"
     restart: unless-stopped
-

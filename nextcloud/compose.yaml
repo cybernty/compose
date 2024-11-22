@@ -3,7 +3,7 @@ services:
     image: nextcloud:apache
     restart: always
     ports:
-      - 65517:80
+      - "65517:80"
     volumes:
       - nextcloud_data:/var/www/html
     networks:
