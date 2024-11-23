@@ -4,9 +4,9 @@
 
 ## Run
 
-```sh
-# server
+### [server](./server/)
 
+```sh
 bash certificate.sh
 vi config.server.json
 docker compose -f compose.server.yaml up -d
@@ -14,9 +14,9 @@ docker compose -f compose.server.yaml logs
 # docker compose -f compose.server.yaml down
 ```
 
-```sh
-# client
+### [client](./client/)
 
+```sh
 vi config.client.json
 docker compose -f compose.client.yaml up -d
 docker compose -f compose.client.yaml logs
