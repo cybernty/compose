@@ -19,5 +19,5 @@ services:
       - /dev/net/tun
     volumes:
       - ./:/etc/sing-box/
-    command: -c /etc/sing-box/config.client.json run
+    command: -c /etc/sing-box/config.json run
     restart: always

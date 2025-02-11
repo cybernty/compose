@@ -89,7 +89,7 @@
       "tls": {
         "enabled": true,
         "server_name": "www.mihoyo.com",
-        "insecure": true,
+        "certificate": "TODO",
         "utls": {
           "enabled": true,
           "fingerprint": "chrome"
@@ -131,7 +131,7 @@
       "tls": {
         "enabled": true,
         "server_name": "www.mihoyo.com",
-        "insecure": true,
+        "certificate": "TODO",
         "utls": {
           "enabled": true,
           "fingerprint": "chrome"
@@ -150,7 +150,7 @@
       "tls": {
         "enabled": true,
         "server_name": "www.mihoyo.com",
-        "insecure": true
+        "certificate": "TODO"
       }
     },
     {
@@ -162,7 +162,7 @@
       "tls": {
         "enabled": true,
         "server_name": "www.mihoyo.com",
-        "insecure": true
+        "certificate": "TODO"
       }
     },
     {

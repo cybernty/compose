@@ -40,8 +40,8 @@
       "tls": {
         "enabled": true,
         "server_name": "www.mihoyo.com",
-        "key_path": "/etc/sing-box/server.key",
-        "certificate_path": "/etc/sing-box/server.crt"
+        "key": "TODO",
+        "certificate": "TODO"
       },
       "multiplex": {
         "enabled": true
@@ -61,8 +61,8 @@
       "tls": {
         "enabled": true,
         "server_name": "www.mihoyo.com",
-        "key_path": "/etc/sing-box/server.key",
-        "certificate_path": "/etc/sing-box/server.crt"
+        "key": "TODO",
+        "certificate": "TODO"
       }
     },
     {
@@ -104,8 +104,8 @@
       ],
       "tls": {
         "enabled": true,
-        "certificate_path": "/etc/sing-box/server.crt",
-        "key_path": "/etc/sing-box/server.key"
+        "certificate": "TODO",
+        "key": "TODO"
       }
     },
     {
@@ -122,8 +122,8 @@
       "tls": {
         "enabled": true,
         "server_name": "www.mihoyo.com",
-        "key_path": "/etc/sing-box/server.key",
-        "certificate_path": "/etc/sing-box/server.crt"
+        "key": "TODO",
+        "certificate": "TODO"
       }
     }
   ]

@@ -24,6 +24,7 @@ def generate_server_config(template: dict) -> dict:
     config = template.copy()
     passwd = get_random_data("password")
     uuid = get_random_data("uuid")
+    private_key, certificate = get_random_data("certificate")
 
     # print_config(config)
     config["inbounds"][0]["password"] = passwd
@@ -35,6 +36,14 @@ def generate_server_config(template: dict) -> dict:
     config["inbounds"][6]["users"][0]["uuid"] = uuid
     config["inbounds"][7]["users"][0]["uuid"] = uuid
     config["inbounds"][7]["users"][0]["password"] = passwd
+    config["inbounds"][7]["tls"]["certificate"] = certificate
+    config["inbounds"][6]["tls"]["certificate"] = certificate
+    config["inbounds"][3]["tls"]["certificate"] = certificate
+    config["inbounds"][2]["tls"]["certificate"] = certificate
+    config["inbounds"][7]["tls"]["key"] = private_key
+    config["inbounds"][6]["tls"]["key"] = private_key
+    config["inbounds"][3]["tls"]["key"] = private_key
+    config["inbounds"][2]["tls"]["key"] = private_key
 
     return config
 
@@ -44,6 +53,7 @@ def generate_client_config(template: dict) -> dict:
     public_ip = get_public_ip()
     passwd = get_random_data("password")
     uuid = get_random_data("uuid")
+    private_key, certificate = get_random_data("certificate")
 
     # print_config(config)
     config["outbounds"][1]["server"] = public_ip
@@ -62,6 +72,10 @@ def generate_client_config(template: dict) -> dict:
     config["outbounds"][7]["password"] = passwd
     config["outbounds"][8]["server"] = public_ip
     config["outbounds"][8]["password"] = passwd
+    config["outbounds"][8]["tls"]["certificate"] = certificate
+    config["outbounds"][7]["tls"]["certificate"] = certificate
+    config["outbounds"][6]["tls"]["certificate"] = certificate
+    config["outbounds"][3]["tls"]["certificate"] = certificate
 
     return config
 
@@ -89,7 +103,7 @@ def get_public_ip(url: str = "https://ipinfo.io/ip") -> str:
 
 
 @functools.cache
-def get_random_data(type: str) -> str:
+def get_random_data(type: str) -> str | tuple[str, str]:
     cmds = {
         "shell": "docker run --rm -it -v .:/etc/sing-box/ --entrypoint bash ghcr.io/sagernet/sing-box:latest",
         "prefix": "docker run --rm ghcr.io/sagernet/sing-box:latest",
@@ -97,7 +111,7 @@ def get_random_data(type: str) -> str:
         "format": "format -w -c config.json",
         "rand": "generate rand 16 --base64",
         "uuid": "generate uuid",
-        "self_signed": f"generate tls-keypair {"www.mihoyo.com"} --months {12}",
+        "certificate": f'generate tls-keypair {"www.mihoyo.com"} --months {12}',
     }
 
     match type:
@@ -105,10 +119,10 @@ def get_random_data(type: str) -> str:
             cmd = f"{cmds['prefix']} {cmds['uuid']}"
         case "password":
             cmd = f"{cmds['prefix']} {cmds['rand']}"
-        case "tls":
-            cmd = f"{cmds['prefix']} {cmds['self_signed']}"
+        case "certificate":
+            cmd = f"{cmds['prefix']} {cmds['certificate']}"
         case _:
-            cmd = f"{cmds['prefix']} {cmds['rand']}"
+            cmd = f"{cmds['prefix']} --help"
 
     result = subprocess.run(
         cmd,
@@ -116,7 +130,14 @@ def get_random_data(type: str) -> str:
         capture_output=True,
     )
 
-    return result.stdout.decode("utf-8").strip()
+    match type:
+        case "certificate":
+            private_key, certificate = (
+                result.stdout.decode("utf-8").strip().split("\n\n")
+            )
+            return (private_key.strip(), certificate.strip())
+        case _:
+            return result.stdout.decode("utf-8").strip()
 
 
 def main():
