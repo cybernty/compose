@@ -1,3 +1,4 @@
+import functools
 import json
 import requests
 import subprocess
@@ -82,10 +83,12 @@ def print_config(config: dict) -> None:
             print(f"{prefix} = {node}")
 
 
+@functools.cache
 def get_public_ip(url: str = "https://ipinfo.io/ip") -> str:
     return requests.get(url).text
 
 
+@functools.cache
 def get_random_data(type: str) -> str:
     cmds = {
         "shell": "docker run --rm -it -v .:/etc/sing-box/ --entrypoint bash ghcr.io/sagernet/sing-box:latest",
