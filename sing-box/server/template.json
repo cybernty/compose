@@ -10,7 +10,7 @@
       "listen_port": 65534,
       "network": "tcp",
       "method": "2022-blake3-aes-128-gcm",
-      "password": "<secret>",
+      "password": "TODO",
       "multiplex": {
         "enabled": true
       }
@@ -21,7 +21,7 @@
       "listen_port": 65533,
       "users": [
         {
-          "uuid": "<secret>"
+          "uuid": "TODO"
         }
       ],
       "multiplex": {
@@ -34,7 +34,7 @@
       "listen_port": 65532,
       "users": [
         {
-          "password": "<secret>"
+          "password": "TODO"
         }
       ],
       "tls": {
@@ -55,7 +55,7 @@
       "down_mbps": 16,
       "users": [
         {
-          "password": "<secret>"
+          "password": "TODO"
         }
       ],
       "tls": {
@@ -74,7 +74,7 @@
       "strict_mode": true,
       "users": [
         {
-          "password": "<secret>"
+          "password": "TODO"
         }
       ],
       "handshake": {
@@ -87,7 +87,7 @@
       "tag": "shadowsocks-in",
       "listen": "127.0.0.1",
       "method": "2022-blake3-aes-128-gcm",
-      "password": "<secret>",
+      "password": "TODO",
       "multiplex": {
         "enabled": true
       }
@@ -98,7 +98,7 @@
       "listen_port": 65529,
       "users": [
         {
-          "uuid": "<secret>",
+          "uuid": "TODO",
           "flow": "xtls-rprx-vision"
         }
       ],
@@ -114,8 +114,8 @@
       "listen_port": 65528,
       "users": [
         {
-          "uuid": "<secret>",
-          "password": "<secret>"
+          "uuid": "TODO",
+          "password": "TODO"
         }
       ],
       "congestion_control": "bbr",

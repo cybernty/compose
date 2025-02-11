@@ -61,10 +61,10 @@
     {
       "type": "shadowsocks",
       "tag": "ss",
-      "server": "<secret>",
+      "server": "TODO",
       "server_port": 65534,
       "method": "2022-blake3-aes-128-gcm",
-      "password": "<secret>",
+      "password": "TODO",
       "multiplex": {
         "enabled": true
       }
@@ -72,9 +72,9 @@
     {
       "type": "vmess",
       "tag": "vmess",
-      "server": "<secret>",
+      "server": "TODO",
       "server_port": 65533,
-      "uuid": "<secret>",
+      "uuid": "TODO",
       "security": "auto",
       "multiplex": {
         "enabled": true
@@ -83,9 +83,9 @@
     {
       "type": "trojan",
       "tag": "trojan",
-      "server": "<secret>",
+      "server": "TODO",
       "server_port": 65532,
-      "password": "<secret>",
+      "password": "TODO",
       "tls": {
         "enabled": true,
         "server_name": "www.mihoyo.com",
@@ -104,7 +104,7 @@
       "tag": "shadowtls",
       "detour": "shadowtls-outer",
       "method": "2022-blake3-aes-128-gcm",
-      "password": "<secret>",
+      "password": "TODO",
       "multiplex": {
         "enabled": true
       }
@@ -112,10 +112,10 @@
     {
       "type": "shadowtls",
       "tag": "shadowtls-outer",
-      "server": "<secret>",
+      "server": "TODO",
       "server_port": 65530,
       "version": 3,
-      "password": "<secret>",
+      "password": "TODO",
       "tls": {
         "enabled": true,
         "server_name": "www.mihoyo.com"
@@ -124,9 +124,9 @@
     {
       "type": "vless",
       "tag": "vless",
-      "server": "<secret>",
+      "server": "TODO",
       "server_port": 65529,
-      "uuid": "<secret>",
+      "uuid": "TODO",
       "flow": "xtls-rprx-vision",
       "tls": {
         "enabled": true,
@@ -142,10 +142,10 @@
     {
       "type": "tuic",
       "tag": "tuic",
-      "server": "<secret>",
+      "server": "TODO",
       "server_port": 65528,
-      "uuid": "<secret>",
-      "password": "<secret>",
+      "uuid": "TODO",
+      "password": "TODO",
       "congestion_control": "bbr",
       "tls": {
         "enabled": true,
@@ -156,9 +156,9 @@
     {
       "type": "hysteria2",
       "tag": "hysteria2",
-      "server": "<secret>",
+      "server": "TODO",
       "server_port": 65531,
-      "password": "<secret>",
+      "password": "TODO",
       "tls": {
         "enabled": true,
         "server_name": "www.mihoyo.com",
