@@ -2,6 +2,7 @@ import functools
 import json
 import requests
 import subprocess
+import logging
 
 server_template_path = "server/template.json"
 client_template_path = "client/template.json"
@@ -26,7 +27,7 @@ def generate_server_config(template: dict) -> dict:
     uuid = get_random_data("uuid")
     private_key, certificate = get_random_data("certificate")
 
-    # print_config(config)
+    print_config(config)
     config["inbounds"][0]["password"] = passwd
     config["inbounds"][1]["users"][0]["uuid"] = uuid
     config["inbounds"][2]["users"][0]["password"] = passwd
@@ -53,9 +54,9 @@ def generate_client_config(template: dict) -> dict:
     public_ip = get_public_ip()
     passwd = get_random_data("password")
     uuid = get_random_data("uuid")
-    private_key, certificate = get_random_data("certificate")
+    _, certificate = get_random_data("certificate")
 
-    # print_config(config)
+    print_config(config)
     config["outbounds"][1]["server"] = public_ip
     config["outbounds"][1]["password"] = passwd
     config["outbounds"][2]["server"] = public_ip
@@ -81,20 +82,20 @@ def generate_client_config(template: dict) -> dict:
 
 
 def print_config(config: dict) -> None:
-    queue, kv = [config], ["config"]
+    queue = [(config, "config")]
+    kv = []
     while queue:
-        node = queue.pop()
-        prefix = kv.pop()
+        node, prefix = queue.pop()
         if isinstance(node, list):
             for i, item in enumerate(node):
-                queue.append(item)
-                kv.append(f"{prefix}[{i}]")
+                queue.append((item, f"{prefix}[{i}]"))
         elif isinstance(node, dict):
             for key, value in node.items():
-                queue.append(value)
-                kv.append(f'{prefix}["{key}"]')
+                queue.append((value, f'{prefix}["{key}"]'))
         else:
-            print(f"{prefix} = {node}")
+            kv.insert(0, f"{prefix} = {node}")
+
+    logging.debug("\n".join(kv))
 
 
 @functools.cache
@@ -151,4 +152,5 @@ def main():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     main()
