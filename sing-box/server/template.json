@@ -21,6 +21,7 @@
       "listen_port": 65533,
       "users": [
         {
+          "name": "",
           "uuid": "TODO"
         }
       ],
@@ -34,14 +35,15 @@
       "listen_port": 65532,
       "users": [
         {
+          "name": "",
           "password": "TODO"
         }
       ],
       "tls": {
         "enabled": true,
         "server_name": "www.mihoyo.com",
-        "key": "TODO",
-        "certificate": "TODO"
+        "certificate": "TODO",
+        "key": "TODO"
       },
       "multiplex": {
         "enabled": true
@@ -61,17 +63,16 @@
       "tls": {
         "enabled": true,
         "server_name": "www.mihoyo.com",
-        "key": "TODO",
-        "certificate": "TODO"
+        "certificate": "TODO",
+        "key": "TODO"
       }
     },
     {
       "type": "shadowtls",
       "listen": "::",
       "listen_port": 65530,
-      "version": 3,
       "detour": "shadowsocks-in",
-      "strict_mode": true,
+      "version": 3,
       "users": [
         {
           "password": "TODO"
@@ -80,7 +81,8 @@
       "handshake": {
         "server": "www.mihoyo.com",
         "server_port": 443
-      }
+      },
+      "strict_mode": true
     },
     {
       "type": "shadowsocks",
@@ -98,6 +100,7 @@
       "listen_port": 65529,
       "users": [
         {
+          "name": "",
           "uuid": "TODO",
           "flow": "xtls-rprx-vision"
         }
@@ -122,8 +125,8 @@
       "tls": {
         "enabled": true,
         "server_name": "www.mihoyo.com",
-        "key": "TODO",
-        "certificate": "TODO"
+        "certificate": "TODO",
+        "key": "TODO"
       }
     }
   ]

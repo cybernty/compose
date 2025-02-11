@@ -4,7 +4,6 @@ default: generate
 .PHONY: generate
 generate:
 	python generate.py
-	bash certificate.sh
 
 .PHONY: up
 up:

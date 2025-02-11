@@ -31,20 +31,20 @@ def generate_server_config(template: dict) -> dict:
     config["inbounds"][0]["password"] = passwd
     config["inbounds"][1]["users"][0]["uuid"] = uuid
     config["inbounds"][2]["users"][0]["password"] = passwd
+    config["inbounds"][2]["tls"]["certificate"] = certificate
+    config["inbounds"][2]["tls"]["key"] = private_key
     config["inbounds"][3]["users"][0]["password"] = passwd
+    config["inbounds"][3]["tls"]["certificate"] = certificate
+    config["inbounds"][3]["tls"]["key"] = private_key
     config["inbounds"][4]["users"][0]["password"] = passwd
     config["inbounds"][5]["password"] = passwd
     config["inbounds"][6]["users"][0]["uuid"] = uuid
+    config["inbounds"][6]["tls"]["certificate"] = certificate
+    config["inbounds"][6]["tls"]["key"] = private_key
     config["inbounds"][7]["users"][0]["uuid"] = uuid
     config["inbounds"][7]["users"][0]["password"] = passwd
     config["inbounds"][7]["tls"]["certificate"] = certificate
-    config["inbounds"][6]["tls"]["certificate"] = certificate
-    config["inbounds"][3]["tls"]["certificate"] = certificate
-    config["inbounds"][2]["tls"]["certificate"] = certificate
     config["inbounds"][7]["tls"]["key"] = private_key
-    config["inbounds"][6]["tls"]["key"] = private_key
-    config["inbounds"][3]["tls"]["key"] = private_key
-    config["inbounds"][2]["tls"]["key"] = private_key
 
     return config
 
@@ -63,20 +63,20 @@ def generate_client_config(template: dict) -> dict:
     config["outbounds"][2]["uuid"] = uuid
     config["outbounds"][3]["server"] = public_ip
     config["outbounds"][3]["password"] = passwd
-    config["outbounds"][4]["password"] = passwd
-    config["outbounds"][5]["server"] = public_ip
+    config["outbounds"][3]["tls"]["certificate"] = certificate
+    config["outbounds"][4]["server"] = public_ip
+    config["outbounds"][4]["uuid"] = uuid
+    config["outbounds"][4]["tls"]["certificate"] = certificate
     config["outbounds"][5]["password"] = passwd
     config["outbounds"][6]["server"] = public_ip
-    config["outbounds"][6]["uuid"] = uuid
+    config["outbounds"][6]["password"] = passwd
     config["outbounds"][7]["server"] = public_ip
     config["outbounds"][7]["uuid"] = uuid
     config["outbounds"][7]["password"] = passwd
+    config["outbounds"][7]["tls"]["certificate"] = certificate
     config["outbounds"][8]["server"] = public_ip
     config["outbounds"][8]["password"] = passwd
     config["outbounds"][8]["tls"]["certificate"] = certificate
-    config["outbounds"][7]["tls"]["certificate"] = certificate
-    config["outbounds"][6]["tls"]["certificate"] = certificate
-    config["outbounds"][3]["tls"]["certificate"] = certificate
 
     return config
 
