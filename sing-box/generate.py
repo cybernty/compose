@@ -1,24 +1,28 @@
 import functools
 import json
-import requests
-import subprocess
 import logging
+import subprocess
+from typing import Tuple, Union
 
-server_template_path = "server/template.json"
-client_template_path = "client/template.json"
-server_config_path = "server/config.json"
-client_config_path = "client/config.json"
+import requests
 
 
 def load_config(path: str) -> dict:
-    with open(path, "r") as f:
-        data = json.load(f)
-    return data
+    try:
+        with open(path, "r") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        logging.error(f"Error loading config from {path}: {e}")
+        raise
 
 
 def dump_config(path: str, data: dict) -> None:
-    with open(path, "w") as f:
-        json.dump(data, f, indent=4)
+    try:
+        with open(path, "w") as f:
+            json.dump(data, f, indent=4)
+    except IOError as e:
+        logging.error(f"Error writing config to {path}: {e}")
+        raise
 
 
 def generate_server_config(template: dict) -> dict:
@@ -100,12 +104,18 @@ def print_config(config: dict) -> None:
 
 @functools.cache
 def get_public_ip(url: str = "https://ipinfo.io/ip") -> str:
-    return requests.get(url).text
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.text.strip()
+    except requests.RequestException as e:
+        logging.error(f"Error fetching public IP: {e}")
+        raise
 
 
 @functools.cache
-def get_random_data(type: str) -> str | tuple[str, str]:
-    cmds = {
+def get_random_data(type: str) -> Union[str, Tuple[str, str]]:
+    COMMANDS = {
         "shell": "docker run --rm -it -v .:/etc/sing-box/ --entrypoint bash ghcr.io/sagernet/sing-box:latest",
         "prefix": "docker run --rm ghcr.io/sagernet/sing-box:latest",
         "check": "check -c config.json",
@@ -117,38 +127,52 @@ def get_random_data(type: str) -> str | tuple[str, str]:
 
     match type:
         case "uuid":
-            cmd = f"{cmds['prefix']} {cmds['uuid']}"
+            cmd = f"{COMMANDS['prefix']} {COMMANDS['uuid']}"
         case "password":
-            cmd = f"{cmds['prefix']} {cmds['rand']}"
+            cmd = f"{COMMANDS['prefix']} {COMMANDS['rand']}"
         case "certificate":
-            cmd = f"{cmds['prefix']} {cmds['certificate']}"
+            cmd = f"{COMMANDS['prefix']} {COMMANDS['certificate']}"
         case _:
-            cmd = f"{cmds['prefix']} --help"
+            cmd = f"{COMMANDS['prefix']} --help"
 
     result = subprocess.run(
         cmd,
         shell=True,
         capture_output=True,
+        text=True,
     )
+    if result.returncode != 0:
+        logging.error(f"Error running command '{cmd}': {result.stderr}")
+        raise subprocess.CalledProcessError(
+            result.returncode, cmd, result.stdout, result.stderr
+        )
 
     match type:
         case "certificate":
-            private_key, certificate = (
-                result.stdout.decode("utf-8").strip().split("\n\n")
-            )
-            return (private_key.strip(), certificate.strip())
+            private_key, certificate = result.stdout.strip().split("\n\n")
+            return private_key.strip(), certificate.strip()
         case _:
-            return result.stdout.decode("utf-8").strip()
+            return result.stdout.strip()
 
 
 def main():
-    server_template = load_config(server_template_path)
-    server_config = generate_server_config(server_template)
-    dump_config(server_config_path, server_config)
+    CONFIG_PATHS = {
+        "server_template": "server/config.tmpl.json",
+        "client_template": "client/config.tmpl.json",
+        "server_config": "server/config.json",
+        "client_config": "client/config.json",
+    }
 
-    client_template = load_config(client_template_path)
-    client_config = generate_client_config(client_template)
-    dump_config(client_config_path, client_config)
+    try:
+        server_template = load_config(CONFIG_PATHS["server_template"])
+        server_config = generate_server_config(server_template)
+        dump_config(CONFIG_PATHS["server_config"], server_config)
+
+        client_template = load_config(CONFIG_PATHS["client_template"])
+        client_config = generate_client_config(client_template)
+        dump_config(CONFIG_PATHS["client_config"], client_config)
+    except Exception as e:
+        logging.error(f"An error occurred: {e}")
 
 
 if __name__ == "__main__":
