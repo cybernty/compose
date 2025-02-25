@@ -26,67 +26,45 @@ def dump(path: str, data: str) -> None:
         raise
 
 
-def generate_server_config(template: string.Template) -> str:
+def generate_config(template: string.Template, config_info: dict) -> str:
     try:
         logging.debug(template.get_identifiers())
-        password = get_random_data("password")
-        uuid = get_random_data("uuid")
-        private_key, certificate = get_random_data("certificate")
-
-        CONFIG_INFO = {
-            "password": password,
-            "uuid": uuid,
-            "private_key": private_key,
-            "certificate": certificate,
-        }
-        logging.debug(CONFIG_INFO)
-        logging.debug({k: repr(v)[1:-1] for k, v in CONFIG_INFO.items()})
+        logging.debug(config_info)
+        logging.debug({k: repr(v)[1:-1] for k, v in config_info.items()})
         logging.debug(
             {
                 k: v.encode("unicode_escape").decode("utf-8")
-                for k, v in CONFIG_INFO.items()
+                for k, v in config_info.items()
             }
         )
-        CONFIG_INFO = {
+        config_info = {
             k: v.encode("unicode_escape").decode("utf-8")
-            for k, v in CONFIG_INFO.items()
+            for k, v in config_info.items()
         }
-        return template.substitute(CONFIG_INFO)
+        return template.substitute(config_info)
     except Exception as e:
-        logging.error(f"Error generating server config: {e}")
+        logging.error(f"Error generating config: {e}")
         raise
+
+
+def generate_server_config(template: string.Template) -> str:
+    config_info = {
+        "password": get_random_data("password"),
+        "uuid": get_random_data("uuid"),
+        "private_key": get_random_data("certificate")[0],
+        "certificate": get_random_data("certificate")[1],
+    }
+    return generate_config(template, config_info)
 
 
 def generate_client_config(template: string.Template) -> str:
-    try:
-        logging.debug(template.get_identifiers())
-        public_ip = get_public_ip()
-        password = get_random_data("password")
-        uuid = get_random_data("uuid")
-        _, certificate = get_random_data("certificate")
-
-        CONFIG_INFO = {
-            "server_address": public_ip,
-            "password": password,
-            "uuid": uuid,
-            "certificate": certificate,
-        }
-        logging.debug(CONFIG_INFO)
-        logging.debug({k: repr(v)[1:-1] for k, v in CONFIG_INFO.items()})
-        logging.debug(
-            {
-                k: v.encode("unicode_escape").decode("utf-8")
-                for k, v in CONFIG_INFO.items()
-            }
-        )
-        CONFIG_INFO = {
-            k: v.encode("unicode_escape").decode("utf-8")
-            for k, v in CONFIG_INFO.items()
-        }
-        return template.substitute(CONFIG_INFO)
-    except Exception as e:
-        logging.error(f"Error generating client config: {e}")
-        raise
+    config_info = {
+        "server_address": get_public_ip(),
+        "password": get_random_data("password"),
+        "uuid": get_random_data("uuid"),
+        "certificate": get_random_data("certificate")[1],
+    }
+    return generate_config(template, config_info)
 
 
 def print_config(config: dict) -> None:
@@ -161,23 +139,26 @@ def get_random_data(type: str) -> Union[str, Tuple[str, str]]:
 
 
 def main():
-    CONFIG_PATHS = {
-        "server_template": "server/config.tmpl.json",
-        "client_template": "client/config.tmpl.json",
-        "server_config": "server/config.json",
-        "client_config": "client/config.json",
+    def process_config(d: dict) -> None:
+        try:
+            template = load(d["template"])
+            config = d["method"](template)
+            dump(d["output"], config)
+        except Exception as e:
+            logging.error(f"An error occurred while processing {d}: {e}")
+
+    SERVER = {
+        "template": "server/config.tmpl.json",
+        "output": "server/config.json",
+        "method": generate_server_config,
     }
-
-    try:
-        server_template = load(CONFIG_PATHS["server_template"])
-        server_config = generate_server_config(server_template)
-        dump(CONFIG_PATHS["server_config"], server_config)
-
-        client_template = load(CONFIG_PATHS["client_template"])
-        client_config = generate_client_config(client_template)
-        dump(CONFIG_PATHS["client_config"], client_config)
-    except Exception as e:
-        logging.error(f"An error occurred: {e}")
+    CLIENT = {
+        "template": "client/config.tmpl.json",
+        "output": "client/config.json",
+        "method": generate_client_config,
+    }
+    process_config(SERVER)
+    process_config(CLIENT)
 
 
 if __name__ == "__main__":
