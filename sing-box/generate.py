@@ -1,88 +1,92 @@
 import functools
-import json
 import logging
+import string
 import subprocess
 from typing import Tuple, Union
 
 import requests
 
 
-def load_config(path: str) -> dict:
+def load(path: str) -> string.Template:
     try:
         with open(path, "r") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError) as e:
-        logging.error(f"Error loading config from {path}: {e}")
+            tmpl = string.Template(f.read())
+            return tmpl
+    except IOError as e:
+        logging.error(f"Error reading config from {path}: {e}")
         raise
 
 
-def dump_config(path: str, data: dict) -> None:
+def dump(path: str, data: str) -> None:
     try:
         with open(path, "w") as f:
-            json.dump(data, f, indent=4)
+            f.write(data)
     except IOError as e:
         logging.error(f"Error writing config to {path}: {e}")
         raise
 
 
-def generate_server_config(template: dict) -> dict:
-    config = template.copy()
-    passwd = get_random_data("password")
-    uuid = get_random_data("uuid")
-    private_key, certificate = get_random_data("certificate")
+def generate_server_config(template: string.Template) -> str:
+    try:
+        logging.debug(template.get_identifiers())
+        password = get_random_data("password")
+        uuid = get_random_data("uuid")
+        private_key, certificate = get_random_data("certificate")
 
-    print_config(config)
-    config["inbounds"][0]["password"] = passwd
-    config["inbounds"][1]["users"][0]["uuid"] = uuid
-    config["inbounds"][2]["users"][0]["password"] = passwd
-    config["inbounds"][2]["tls"]["certificate"] = certificate
-    config["inbounds"][2]["tls"]["key"] = private_key
-    config["inbounds"][3]["users"][0]["password"] = passwd
-    config["inbounds"][3]["tls"]["certificate"] = certificate
-    config["inbounds"][3]["tls"]["key"] = private_key
-    config["inbounds"][4]["users"][0]["password"] = passwd
-    config["inbounds"][5]["password"] = passwd
-    config["inbounds"][6]["users"][0]["uuid"] = uuid
-    config["inbounds"][6]["tls"]["certificate"] = certificate
-    config["inbounds"][6]["tls"]["key"] = private_key
-    config["inbounds"][7]["users"][0]["uuid"] = uuid
-    config["inbounds"][7]["users"][0]["password"] = passwd
-    config["inbounds"][7]["tls"]["certificate"] = certificate
-    config["inbounds"][7]["tls"]["key"] = private_key
+        CONFIG_INFO = {
+            "password": password,
+            "uuid": uuid,
+            "private_key": private_key,
+            "certificate": certificate,
+        }
+        logging.debug(CONFIG_INFO)
+        logging.debug({k: repr(v)[1:-1] for k, v in CONFIG_INFO.items()})
+        logging.debug(
+            {
+                k: v.encode("unicode_escape").decode("utf-8")
+                for k, v in CONFIG_INFO.items()
+            }
+        )
+        CONFIG_INFO = {
+            k: v.encode("unicode_escape").decode("utf-8")
+            for k, v in CONFIG_INFO.items()
+        }
+        return template.substitute(CONFIG_INFO)
+    except Exception as e:
+        logging.error(f"Error generating server config: {e}")
+        raise
 
-    return config
 
+def generate_client_config(template: string.Template) -> str:
+    try:
+        logging.debug(template.get_identifiers())
+        public_ip = get_public_ip()
+        password = get_random_data("password")
+        uuid = get_random_data("uuid")
+        _, certificate = get_random_data("certificate")
 
-def generate_client_config(template: dict) -> dict:
-    config = template.copy()
-    public_ip = get_public_ip()
-    passwd = get_random_data("password")
-    uuid = get_random_data("uuid")
-    _, certificate = get_random_data("certificate")
-
-    print_config(config)
-    config["outbounds"][1]["server"] = public_ip
-    config["outbounds"][1]["password"] = passwd
-    config["outbounds"][2]["server"] = public_ip
-    config["outbounds"][2]["uuid"] = uuid
-    config["outbounds"][3]["server"] = public_ip
-    config["outbounds"][3]["password"] = passwd
-    config["outbounds"][3]["tls"]["certificate"] = certificate
-    config["outbounds"][4]["server"] = public_ip
-    config["outbounds"][4]["uuid"] = uuid
-    config["outbounds"][4]["tls"]["certificate"] = certificate
-    config["outbounds"][5]["password"] = passwd
-    config["outbounds"][6]["server"] = public_ip
-    config["outbounds"][6]["password"] = passwd
-    config["outbounds"][7]["server"] = public_ip
-    config["outbounds"][7]["uuid"] = uuid
-    config["outbounds"][7]["password"] = passwd
-    config["outbounds"][7]["tls"]["certificate"] = certificate
-    config["outbounds"][8]["server"] = public_ip
-    config["outbounds"][8]["password"] = passwd
-    config["outbounds"][8]["tls"]["certificate"] = certificate
-
-    return config
+        CONFIG_INFO = {
+            "server_address": public_ip,
+            "password": password,
+            "uuid": uuid,
+            "certificate": certificate,
+        }
+        logging.debug(CONFIG_INFO)
+        logging.debug({k: repr(v)[1:-1] for k, v in CONFIG_INFO.items()})
+        logging.debug(
+            {
+                k: v.encode("unicode_escape").decode("utf-8")
+                for k, v in CONFIG_INFO.items()
+            }
+        )
+        CONFIG_INFO = {
+            k: v.encode("unicode_escape").decode("utf-8")
+            for k, v in CONFIG_INFO.items()
+        }
+        return template.substitute(CONFIG_INFO)
+    except Exception as e:
+        logging.error(f"Error generating client config: {e}")
+        raise
 
 
 def print_config(config: dict) -> None:
@@ -147,12 +151,13 @@ def get_random_data(type: str) -> Union[str, Tuple[str, str]]:
             result.returncode, cmd, result.stdout, result.stderr
         )
 
+    data = result.stdout.strip()
     match type:
         case "certificate":
-            private_key, certificate = result.stdout.strip().split("\n\n")
+            private_key, certificate = data.split("\n\n")
             return private_key.strip(), certificate.strip()
         case _:
-            return result.stdout.strip()
+            return data
 
 
 def main():
@@ -164,17 +169,17 @@ def main():
     }
 
     try:
-        server_template = load_config(CONFIG_PATHS["server_template"])
+        server_template = load(CONFIG_PATHS["server_template"])
         server_config = generate_server_config(server_template)
-        dump_config(CONFIG_PATHS["server_config"], server_config)
+        dump(CONFIG_PATHS["server_config"], server_config)
 
-        client_template = load_config(CONFIG_PATHS["client_template"])
+        client_template = load(CONFIG_PATHS["client_template"])
         client_config = generate_client_config(client_template)
-        dump_config(CONFIG_PATHS["client_config"], client_config)
+        dump(CONFIG_PATHS["client_config"], client_config)
     except Exception as e:
         logging.error(f"An error occurred: {e}")
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
     main()
