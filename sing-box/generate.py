@@ -1,172 +1,151 @@
-import functools
 import logging
-import string
 import subprocess
-from typing import Tuple, Union
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from functools import cache
+from pathlib import Path
+from string import Template
+from typing import Tuple
 
 import requests
 
 
-class ConfigGenerator:
-    def __init__(self, template_path: str, output_path: str):
-        self.template_path = template_path
-        self.output_path = output_path
-        self.template = self.load_template()
-
-    def load_template(self) -> string.Template:
-        try:
-            with open(self.template_path, "r") as f:
-                tmpl = string.Template(f.read())
-                return tmpl
-        except IOError as e:
-            logging.error(f"Error reading config from {self.template_path}: {e}")
-            raise
-
-    def dump_config(self, data: str) -> None:
-        try:
-            with open(self.output_path, "w") as f:
-                f.write(data)
-        except IOError as e:
-            logging.error(f"Error writing config to {self.output_path}: {e}")
-            raise
-
-    def generate_config(self, config_info: dict) -> str:
-        try:
-            logging.debug(self.template.get_identifiers())
-            logging.debug(config_info)
-            logging.debug({k: repr(v)[1:-1] for k, v in config_info.items()})
-            logging.debug(
-                {
-                    k: v.encode("unicode_escape").decode("utf-8")
-                    for k, v in config_info.items()
-                }
-            )
-            config_info = {
-                k: v.encode("unicode_escape").decode("utf-8")
-                for k, v in config_info.items()
-            }
-            return self.template.substitute(config_info)
-        except Exception as e:
-            logging.error(f"Error generating config: {e}")
-            raise
-
-    def generate_specific_config(self) -> dict:
-        raise NotImplementedError("Subclasses must implement this method")
-
-    def process_config(self) -> None:
-        try:
-            config_info = self.generate_specific_config()
-            config = self.generate_config(config_info)
-            self.dump_config(config)
-        except Exception as e:
-            logging.error(
-                f"An error occurred while processing {self.template_path}: {e}"
-            )
-
+class NetworkUtils:
     @staticmethod
-    def print_config(config: dict) -> None:
-        queue = [(config, "config")]
-        kv = []
-        while queue:
-            node, prefix = queue.pop()
-            if isinstance(node, list):
-                for i, item in enumerate(node):
-                    queue.append((item, f"{prefix}[{i}]"))
-            elif isinstance(node, dict):
-                for key, value in node.items():
-                    queue.append((value, f'{prefix}["{key}"]'))
-            else:
-                kv.insert(0, f"{prefix} = {node}")
-
-        logging.debug("\n".join(kv))
-
-    @staticmethod
-    @functools.cache
-    def get_public_ip(url: str = "https://ipinfo.io/ip") -> str:
+    def get_public_ip(url: str = "https://api.ipify.org") -> str:
         try:
-            response = requests.get(url)
+            response = requests.get(url, timeout=5)
             response.raise_for_status()
             return response.text.strip()
         except requests.RequestException as e:
-            logging.error(f"Error fetching public IP: {e}")
+            logging.error(f"Failed to get public IP: {e}")
+            raise
+
+
+class Commands:
+    @staticmethod
+    def run_docker_command(command: str) -> str:
+        cmd = f"docker run --rm ghcr.io/sagernet/sing-box:latest {command}"
+        try:
+            result = subprocess.run(
+                cmd,
+                shell=True,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            return result.stdout.strip()
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Run command failed: {e}")
             raise
 
     @staticmethod
-    @functools.cache
-    def get_random_data(type: str) -> Union[str, Tuple[str, str]]:
-        COMMANDS = {
-            "shell": "docker run --rm -it -v .:/etc/sing-box/ --entrypoint bash ghcr.io/sagernet/sing-box:latest",
-            "prefix": "docker run --rm ghcr.io/sagernet/sing-box:latest",
-            "check": "check -c config.json",
-            "format": "format -w -c config.json",
-            "rand": "generate rand 16 --base64",
-            "uuid": "generate uuid",
-            "certificate": f'generate tls-keypair {"www.mihoyo.com"} --months {12}',
-        }
+    @cache
+    def get_random_password() -> str:
+        return Commands.run_docker_command("generate rand 16 --base64")
 
-        match type:
-            case "uuid":
-                cmd = f"{COMMANDS['prefix']} {COMMANDS['uuid']}"
-            case "password":
-                cmd = f"{COMMANDS['prefix']} {COMMANDS['rand']}"
-            case "certificate":
-                cmd = f"{COMMANDS['prefix']} {COMMANDS['certificate']}"
-            case _:
-                cmd = f"{COMMANDS['prefix']} --help"
+    @staticmethod
+    @cache
+    def get_uuid() -> str:
+        return Commands.run_docker_command("generate uuid")
 
-        result = subprocess.run(
-            cmd,
-            shell=True,
-            capture_output=True,
-            text=True,
+    @staticmethod
+    @cache
+    def get_certificate() -> Tuple[str, str]:
+        result = Commands.run_docker_command(
+            "generate tls-keypair www.mihoyo.com --months 12"
         )
-        if result.returncode != 0:
-            logging.error(f"Error running command '{cmd}': {result.stderr}")
-            raise subprocess.CalledProcessError(
-                result.returncode, cmd, result.stdout, result.stderr
-            )
+        private_key, certificate = result.split("\n\n")
+        return private_key.strip(), certificate.strip()
 
-        data = result.stdout.strip()
-        match type:
-            case "certificate":
-                private_key, certificate = data.split("\n\n")
-                return private_key.strip(), certificate.strip()
+
+@dataclass
+class ConfigFile:
+    path: Path
+
+    def read(self) -> str:
+        try:
+            return self.path.read_text()
+        except IOError as e:
+            logging.error(f"Failed to read {self.path}: {e}")
+            raise
+
+    def write(self, content: str) -> None:
+        try:
+            self.path.write_text(content)
+        except IOError as e:
+            logging.error(f"Failed to write {self.path}: {e}")
+            raise
+
+
+class ConfigGeneratorBase(ABC):
+    def __init__(self, template_path: Path, output_path: Path):
+        self.template = Template(ConfigFile(template_path).read())
+        self.output_file = ConfigFile(output_path)
+
+    @abstractmethod
+    def get_config_data(self) -> dict[str, str]:
+        pass
+
+    def generate(self) -> None:
+        try:
+            config_data = self.get_config_data()
+            escaped_data = {
+                k: v.encode("unicode_escape").decode("utf-8")
+                for k, v in config_data.items()
+            }
+            config = self.template.substitute(escaped_data)
+            self.output_file.write(config)
+        except Exception as e:
+            logging.error(f"Config generation failed: {e}")
+            raise
+
+
+class ServerConfigGenerator(ConfigGeneratorBase):
+    def get_config_data(self) -> dict[str, str]:
+        password = Commands.get_random_password()
+        uuid = Commands.get_uuid()
+        private_key, certificate = Commands.get_certificate()
+        return {
+            "password": password,
+            "uuid": uuid,
+            "private_key": private_key,
+            "certificate": certificate,
+        }
+
+
+class ClientConfigGenerator(ConfigGeneratorBase):
+    def get_config_data(self) -> dict[str, str]:
+        password = Commands.get_random_password()
+        uuid = Commands.get_uuid()
+        _, certificate = Commands.get_certificate()
+        return {
+            "server_address": NetworkUtils.get_public_ip(),
+            "password": password,
+            "uuid": uuid,
+            "certificate": certificate,
+        }
+
+
+def main() -> None:
+    logging.basicConfig(level=logging.DEBUG)
+
+    base_dir = Path(__file__).parent
+    for config_type in ["server", "client"]:
+        match config_type:
+            case "server":
+                generator_class = ServerConfigGenerator
+            case "client":
+                generator_class = ClientConfigGenerator
             case _:
-                return data
-
-
-class ServerConfigGenerator(ConfigGenerator):
-    def generate_specific_config(self) -> dict:
-        return {
-            "password": self.get_random_data("password"),
-            "uuid": self.get_random_data("uuid"),
-            "private_key": self.get_random_data("certificate")[0],
-            "certificate": self.get_random_data("certificate")[1],
-        }
-
-
-class ClientConfigGenerator(ConfigGenerator):
-    def generate_specific_config(self) -> dict:
-        return {
-            "server_address": self.get_public_ip(),
-            "password": self.get_random_data("password"),
-            "uuid": self.get_random_data("uuid"),
-            "certificate": self.get_random_data("certificate")[1],
-        }
-
-
-def main():
-    server_generator = ServerConfigGenerator(
-        "server/config.tmpl.json", "server/config.json"
-    )
-    client_generator = ClientConfigGenerator(
-        "client/config.tmpl.json", "client/config.json"
-    )
-
-    server_generator.process_config()
-    client_generator.process_config()
+                raise ValueError(f"Unknown config type: {config_type}")
+        logging.debug(base_dir / config_type)
+        generator = generator_class(
+            template_path=base_dir / config_type / "config.tmpl.json",
+            output_path=base_dir / config_type / "config.json",
+        )
+        generator.generate()
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
     main()
