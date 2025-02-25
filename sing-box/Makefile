@@ -3,7 +3,7 @@ default: generate
 
 .PHONY: generate
 generate:
-	python3 generate.py
+	python3 config-generator.py
 
 .PHONY: up
 up:
