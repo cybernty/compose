@@ -10,7 +10,7 @@
       "listen_port": 65534,
       "network": "tcp",
       "method": "2022-blake3-aes-128-gcm",
-      "password": "TODO",
+      "password": "$password",
       "multiplex": {
         "enabled": true
       }
@@ -22,7 +22,7 @@
       "users": [
         {
           "name": "",
-          "uuid": "TODO"
+          "uuid": "$uuid"
         }
       ],
       "multiplex": {
@@ -36,14 +36,14 @@
       "users": [
         {
           "name": "",
-          "password": "TODO"
+          "password": "$password"
         }
       ],
       "tls": {
         "enabled": true,
         "server_name": "www.mihoyo.com",
-        "certificate": "TODO",
-        "key": "TODO"
+        "certificate": "$certificate",
+        "key": "$private_key"
       },
       "multiplex": {
         "enabled": true
@@ -57,14 +57,14 @@
       "down_mbps": 16,
       "users": [
         {
-          "password": "TODO"
+          "password": "$password"
         }
       ],
       "tls": {
         "enabled": true,
         "server_name": "www.mihoyo.com",
-        "certificate": "TODO",
-        "key": "TODO"
+        "certificate": "$certificate",
+        "key": "$private_key"
       }
     },
     {
@@ -75,7 +75,7 @@
       "version": 3,
       "users": [
         {
-          "password": "TODO"
+          "password": "$password"
         }
       ],
       "handshake": {
@@ -89,7 +89,7 @@
       "tag": "shadowsocks-in",
       "listen": "127.0.0.1",
       "method": "2022-blake3-aes-128-gcm",
-      "password": "TODO",
+      "password": "$password",
       "multiplex": {
         "enabled": true
       }
@@ -101,14 +101,14 @@
       "users": [
         {
           "name": "",
-          "uuid": "TODO",
+          "uuid": "$uuid",
           "flow": "xtls-rprx-vision"
         }
       ],
       "tls": {
         "enabled": true,
-        "certificate": "TODO",
-        "key": "TODO"
+        "certificate": "$certificate",
+        "key": "$private_key"
       }
     },
     {
@@ -117,16 +117,16 @@
       "listen_port": 65528,
       "users": [
         {
-          "uuid": "TODO",
-          "password": "TODO"
+          "uuid": "$uuid",
+          "password": "$password"
         }
       ],
       "congestion_control": "bbr",
       "tls": {
         "enabled": true,
         "server_name": "www.mihoyo.com",
-        "certificate": "TODO",
-        "key": "TODO"
+        "certificate": "$certificate",
+        "key": "$private_key"
       }
     }
   ]

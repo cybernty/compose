@@ -1,156 +1,151 @@
-import functools
-import json
-import requests
-import subprocess
 import logging
+import subprocess
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from functools import cache
+from pathlib import Path
+from string import Template
+from typing import Tuple
 
-server_template_path = "server/template.json"
-client_template_path = "client/template.json"
-server_config_path = "server/config.json"
-client_config_path = "client/config.json"
-
-
-def load_config(path: str) -> dict:
-    with open(path, "r") as f:
-        data = json.load(f)
-    return data
+import requests
 
 
-def dump_config(path: str, data: dict) -> None:
-    with open(path, "w") as f:
-        json.dump(data, f, indent=4)
+class NetworkUtils:
+    @staticmethod
+    def get_public_ip(url: str = "https://api.ipify.org") -> str:
+        try:
+            response = requests.get(url, timeout=5)
+            response.raise_for_status()
+            return response.text.strip()
+        except requests.RequestException as e:
+            logging.error(f"Failed to get public IP: {e}")
+            raise
 
 
-def generate_server_config(template: dict) -> dict:
-    config = template.copy()
-    passwd = get_random_data("password")
-    uuid = get_random_data("uuid")
-    private_key, certificate = get_random_data("certificate")
-
-    print_config(config)
-    config["inbounds"][0]["password"] = passwd
-    config["inbounds"][1]["users"][0]["uuid"] = uuid
-    config["inbounds"][2]["users"][0]["password"] = passwd
-    config["inbounds"][2]["tls"]["certificate"] = certificate
-    config["inbounds"][2]["tls"]["key"] = private_key
-    config["inbounds"][3]["users"][0]["password"] = passwd
-    config["inbounds"][3]["tls"]["certificate"] = certificate
-    config["inbounds"][3]["tls"]["key"] = private_key
-    config["inbounds"][4]["users"][0]["password"] = passwd
-    config["inbounds"][5]["password"] = passwd
-    config["inbounds"][6]["users"][0]["uuid"] = uuid
-    config["inbounds"][6]["tls"]["certificate"] = certificate
-    config["inbounds"][6]["tls"]["key"] = private_key
-    config["inbounds"][7]["users"][0]["uuid"] = uuid
-    config["inbounds"][7]["users"][0]["password"] = passwd
-    config["inbounds"][7]["tls"]["certificate"] = certificate
-    config["inbounds"][7]["tls"]["key"] = private_key
-
-    return config
-
-
-def generate_client_config(template: dict) -> dict:
-    config = template.copy()
-    public_ip = get_public_ip()
-    passwd = get_random_data("password")
-    uuid = get_random_data("uuid")
-    _, certificate = get_random_data("certificate")
-
-    print_config(config)
-    config["outbounds"][1]["server"] = public_ip
-    config["outbounds"][1]["password"] = passwd
-    config["outbounds"][2]["server"] = public_ip
-    config["outbounds"][2]["uuid"] = uuid
-    config["outbounds"][3]["server"] = public_ip
-    config["outbounds"][3]["password"] = passwd
-    config["outbounds"][3]["tls"]["certificate"] = certificate
-    config["outbounds"][4]["server"] = public_ip
-    config["outbounds"][4]["uuid"] = uuid
-    config["outbounds"][4]["tls"]["certificate"] = certificate
-    config["outbounds"][5]["password"] = passwd
-    config["outbounds"][6]["server"] = public_ip
-    config["outbounds"][6]["password"] = passwd
-    config["outbounds"][7]["server"] = public_ip
-    config["outbounds"][7]["uuid"] = uuid
-    config["outbounds"][7]["password"] = passwd
-    config["outbounds"][7]["tls"]["certificate"] = certificate
-    config["outbounds"][8]["server"] = public_ip
-    config["outbounds"][8]["password"] = passwd
-    config["outbounds"][8]["tls"]["certificate"] = certificate
-
-    return config
-
-
-def print_config(config: dict) -> None:
-    queue = [(config, "config")]
-    kv = []
-    while queue:
-        node, prefix = queue.pop()
-        if isinstance(node, list):
-            for i, item in enumerate(node):
-                queue.append((item, f"{prefix}[{i}]"))
-        elif isinstance(node, dict):
-            for key, value in node.items():
-                queue.append((value, f'{prefix}["{key}"]'))
-        else:
-            kv.insert(0, f"{prefix} = {node}")
-
-    logging.debug("\n".join(kv))
-
-
-@functools.cache
-def get_public_ip(url: str = "https://ipinfo.io/ip") -> str:
-    return requests.get(url).text
-
-
-@functools.cache
-def get_random_data(type: str) -> str | tuple[str, str]:
-    cmds = {
-        "shell": "docker run --rm -it -v .:/etc/sing-box/ --entrypoint bash ghcr.io/sagernet/sing-box:latest",
-        "prefix": "docker run --rm ghcr.io/sagernet/sing-box:latest",
-        "check": "check -c config.json",
-        "format": "format -w -c config.json",
-        "rand": "generate rand 16 --base64",
-        "uuid": "generate uuid",
-        "certificate": f'generate tls-keypair {"www.mihoyo.com"} --months {12}',
-    }
-
-    match type:
-        case "uuid":
-            cmd = f"{cmds['prefix']} {cmds['uuid']}"
-        case "password":
-            cmd = f"{cmds['prefix']} {cmds['rand']}"
-        case "certificate":
-            cmd = f"{cmds['prefix']} {cmds['certificate']}"
-        case _:
-            cmd = f"{cmds['prefix']} --help"
-
-    result = subprocess.run(
-        cmd,
-        shell=True,
-        capture_output=True,
-    )
-
-    match type:
-        case "certificate":
-            private_key, certificate = (
-                result.stdout.decode("utf-8").strip().split("\n\n")
+class Commands:
+    @staticmethod
+    def run_docker_command(command: str) -> str:
+        cmd = f"docker run --rm ghcr.io/sagernet/sing-box:latest {command}"
+        try:
+            result = subprocess.run(
+                cmd,
+                shell=True,
+                capture_output=True,
+                text=True,
+                check=True,
             )
-            return (private_key.strip(), certificate.strip())
-        case _:
-            return result.stdout.decode("utf-8").strip()
+            return result.stdout.strip()
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Run command failed: {e}")
+            raise
+
+    @staticmethod
+    @cache
+    def get_random_password() -> str:
+        return Commands.run_docker_command("generate rand 16 --base64")
+
+    @staticmethod
+    @cache
+    def get_uuid() -> str:
+        return Commands.run_docker_command("generate uuid")
+
+    @staticmethod
+    @cache
+    def get_certificate() -> Tuple[str, str]:
+        result = Commands.run_docker_command(
+            "generate tls-keypair www.mihoyo.com --months 12"
+        )
+        private_key, certificate = result.split("\n\n")
+        return private_key.strip(), certificate.strip()
 
 
-def main():
-    server_template = load_config(server_template_path)
-    server_config = generate_server_config(server_template)
-    dump_config(server_config_path, server_config)
+@dataclass
+class ConfigFile:
+    path: Path
 
-    client_template = load_config(client_template_path)
-    client_config = generate_client_config(client_template)
-    dump_config(client_config_path, client_config)
+    def read(self) -> str:
+        try:
+            return self.path.read_text()
+        except IOError as e:
+            logging.error(f"Failed to read {self.path}: {e}")
+            raise
+
+    def write(self, content: str) -> None:
+        try:
+            self.path.write_text(content)
+        except IOError as e:
+            logging.error(f"Failed to write {self.path}: {e}")
+            raise
+
+
+class ConfigGeneratorBase(ABC):
+    def __init__(self, template_path: Path, output_path: Path):
+        self.template = Template(ConfigFile(template_path).read())
+        self.output_file = ConfigFile(output_path)
+
+    @abstractmethod
+    def get_config_data(self) -> dict[str, str]:
+        pass
+
+    def generate(self) -> None:
+        try:
+            config_data = self.get_config_data()
+            escaped_data = {
+                k: v.encode("unicode_escape").decode("utf-8")
+                for k, v in config_data.items()
+            }
+            config = self.template.substitute(escaped_data)
+            self.output_file.write(config)
+        except Exception as e:
+            logging.error(f"Config generation failed: {e}")
+            raise
+
+
+class ServerConfigGenerator(ConfigGeneratorBase):
+    def get_config_data(self) -> dict[str, str]:
+        password = Commands.get_random_password()
+        uuid = Commands.get_uuid()
+        private_key, certificate = Commands.get_certificate()
+        return {
+            "password": password,
+            "uuid": uuid,
+            "private_key": private_key,
+            "certificate": certificate,
+        }
+
+
+class ClientConfigGenerator(ConfigGeneratorBase):
+    def get_config_data(self) -> dict[str, str]:
+        password = Commands.get_random_password()
+        uuid = Commands.get_uuid()
+        _, certificate = Commands.get_certificate()
+        return {
+            "server_address": NetworkUtils.get_public_ip(),
+            "password": password,
+            "uuid": uuid,
+            "certificate": certificate,
+        }
+
+
+def main() -> None:
+    logging.basicConfig(level=logging.DEBUG)
+
+    base_dir = Path(__file__).parent
+    for config_type in ["server", "client"]:
+        match config_type:
+            case "server":
+                generator_class = ServerConfigGenerator
+            case "client":
+                generator_class = ClientConfigGenerator
+            case _:
+                raise ValueError(f"Unknown config type: {config_type}")
+        logging.debug(base_dir / config_type)
+        generator = generator_class(
+            template_path=base_dir / config_type / "config.tmpl.json",
+            output_path=base_dir / config_type / "config.json",
+        )
+        generator.generate()
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
     main()
